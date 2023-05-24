@@ -1,5 +1,6 @@
 local a = vim.api
 local io = require("layout.io")
+local yaml = require("layout.parsers.yaml")
 
 local app = {}
 
@@ -32,13 +33,14 @@ function app.load_config(self)
 		local win = a.nvim_get_current_win()
 		a.nvim_buf_set_option(buf, "buflisted", false)
 
+		-- update state
 		local s = self.state
 		s.bufs.config = buf
 		s.wins.config = win
 		table.insert(s.open, "config")
 
-		-- parse the config to tree
-		s.config = {}
+		-- parse config - throwing away tree for now
+		s.config = yaml.config_from_tree(yaml.parse(buf))
 	else
 		return
 	end
@@ -78,7 +80,7 @@ function app.setup()
 	if filename == "" then
 		app:mount()
 		app:load_config()
-		P(app.cfg_file)
+		P(app.state.config)
 		return
 	end
 
