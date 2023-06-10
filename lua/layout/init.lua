@@ -1,28 +1,34 @@
+local class = require("layout.middleclass")
+
 local a = vim.api
 local io = require("layout.io")
 local yaml = require("layout.parsers.yaml")
 
-local app = {}
+local App = class("App")
 
-app.state = {
-	config = {},
-	open = {},
-	wins = {},
-	bufs = {},
-	active = "",
-}
+function App:initialize()
+	self.state = {
+		config = {},
+		open = {},
+		wins = {},
+		bufs = {},
+		active = "",
+	}
 
-app.dashboard = [[
+	self.dashboard = [[
 
     hello
 
 ]]
+end
 
-function app.load_config(self)
+function App:set_config()
 	-- load config file using XDG_CONFIG_HOME
 	local output = a.nvim_exec2("!echo $XDG_CONFIG_HOME", { output = true }).output
 	self.xdg_dir = vim.split(output, "\n", {})[3]
 	self.src_dir = self.xdg_dir .. "/nvim-apps/layout.nvim"
+
+	-- if found config.yaml
 	local pathlist = vim.fs.find("config.yaml", { upward = false, path = self.src_dir })
 	if vim.tbl_count(pathlist) > 0 then
 		self.cfg_file = pathlist[1]
@@ -46,7 +52,7 @@ function app.load_config(self)
 	end
 end
 
-function app.mount(self)
+function App:mount()
 	local s = self.state
 
 	-- Unlist empty buffer
@@ -68,31 +74,30 @@ function app.mount(self)
 	end, { desc = "Quit all", buffer = buf })
 end
 
-function app.unmount(self)
+function App:unmount()
 	local s = self.state
 	for _, buf in pairs(s.bufs) do
 		a.nvim_buf_delete(buf, { force = true })
 	end
 end
 
-function app.setup()
+function App:open()
+	local s = self.state
 	local filename = a.nvim_exec2("echo expand('%')", { output = true }).output
 	if filename == "" then
-		app:mount()
-		app:load_config()
-		P(app.state.config)
+		return
+	end
+	if vim.tbl_contains(s.open, filename) then
 		return
 	end
 
-	local s = app.state
 	table.insert(s.open, filename)
 	local win = a.nvim_get_current_win()
 	local buf = a.nvim_get_current_buf()
 	s.wins[filename] = win
 	s.bufs[filename] = buf
 	s.active = filename
-
-	return app
+	P(s.open)
 end
 
-return app
+return App
