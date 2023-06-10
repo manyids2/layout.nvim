@@ -13,7 +13,9 @@ a.nvim_create_autocmd({ "BufRead" }, {
 	group = app_open,
 	pattern = { "*.md", "*.markdown" },
 	callback = function()
-		local filename = a.nvim_exec2("echo expand('%')", { output = true }).output
-		app:open(filename)
+		local filename = a.nvim_exec2("echo expand('%:p')", { output = true }).output
+		if filename ~= app.cfg_file then
+			app:open(filename)
+		end
 	end,
 })

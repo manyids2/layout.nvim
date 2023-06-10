@@ -2,17 +2,17 @@ local class = require("layout.middleclass")
 
 local a = vim.api
 local io = require("layout.io")
-local yaml = require("layout.parsers.yaml")
+local md = require("layout.parsers.md")
 local Split = require("nui.split")
 
 local App = class("App")
 
 function App:initialize()
 	self.state = {
-		config = {},
 		open = {},
 		wins = {},
 		bufs = {},
+		trees = {},
 		active = "",
 		sidebar_open = false,
 	}
@@ -28,60 +28,48 @@ function App:set_config()
 	local s = self.state
 
 	-- load config file using XDG_CONFIG_HOME
-	local output = a.nvim_exec2("!echo $XDG_CONFIG_HOME", { output = true }).output
-	self.xdg_dir = vim.split(output, "\n", {})[3]
-	self.src_dir = self.xdg_dir .. "/nvim-apps/layout.nvim"
+	self.cfg_file = vim.fs.normalize("$XDG_CONFIG_HOME/nvim-apps/layout.nvim/config.md")
 
-	-- if found config.yaml
-	local pathlist = vim.fs.find("config.yaml", { upward = false, path = self.src_dir })
-	if vim.tbl_count(pathlist) > 0 then
-		self.cfg_file = pathlist[1]
+	-- create a buffer for holding the config
+	vim.cmd("e " .. self.cfg_file)
+	local buf = a.nvim_get_current_buf()
+	local win = a.nvim_get_current_win()
+	a.nvim_buf_set_option(buf, "buflisted", false)
 
-		-- create a buffer for holding the config
-		vim.cmd("e " .. self.cfg_file)
-		local buf = a.nvim_get_current_buf()
-		local win = a.nvim_get_current_win()
-		a.nvim_buf_set_option(buf, "buflisted", false)
+	-- update state
+	s.bufs.config = buf
+	s.wins.config = win
+	s.trees.config = md.parse(buf)
+	table.insert(s.open, "config")
+end
 
-		-- update state
-		s.bufs.config = buf
-		s.wins.config = win
-		table.insert(s.open, "config")
-
-		-- parse config - throwing away tree for now
-		s.config = yaml.config_from_tree(yaml.parse(buf))
-	end
-
-	a.nvim_set_current_win(s.wins.dashboard)
-	a.nvim_set_current_buf(s.bufs.dashboard)
+function App:set_dashboard()
+	local s = self.state
+	local buf = a.nvim_create_buf(false, true)
+	local win = a.nvim_get_current_win()
+	a.nvim_buf_set_option(buf, "modifiable", false)
+	a.nvim_buf_set_name(buf, "dashboard")
+	s.wins.dashboard = win
+	s.bufs.dashboard = buf
+	s.active = "dashboard"
+	s.open = { "dashboard" }
+	io.set_text(buf, self.dashboard)
 end
 
 function App:mount()
 	local s = self.state
-	local filename = a.nvim_exec2("echo expand('%')", { output = true }).output
+	local filename = a.nvim_exec2("echo expand('%:p')", { output = true }).output
 
-	local buf, win
-	if filename == "" then
-		buf = a.nvim_get_current_buf()
-	else
-		buf = a.nvim_create_buf(false, true)
-	end
-	a.nvim_buf_set_option(buf, "modifiable", false)
-	a.nvim_buf_set_name(buf, "dashboard")
+	-- Set config
+	self:set_config()
 
-	win = a.nvim_get_current_win()
-	s.wins.dashboard = win
-	s.bufs.dashboard = buf
-
-	-- Display dashboard
-	s.active = "dashboard"
-	s.open = { "dashboard" }
-	io.set_text(buf, self.dashboard)
+	-- Set dashboard
+	self:set_dashboard()
 
 	-- Create sidebar
 	self:create_sidebar()
 
-	-- sidebar_toggle
+	-- sidebar_toggle - global
 	vim.keymap.set("n", "<C-t>", function()
 		s.sidebar_open = not s.sidebar_open
 		if s.sidebar_open then
@@ -89,16 +77,19 @@ function App:mount()
 		else
 			self.sidebar:hide()
 		end
-	end, { desc = "Toggle sidebar", buffer = buf })
+	end, { desc = "Toggle sidebar" })
 
-	-- Destroy on quit
-	vim.keymap.set("n", "q", function()
+	-- Destroy on quit - global
+	vim.keymap.set("n", "<C-q>", function()
 		self:unmount()
 		vim.cmd([[q!]])
-	end, { desc = "Quit all", buffer = buf })
+	end, { desc = "Quit all" })
 
-	if filename ~= "" then
+	if filename ~= "" and filename ~= self.cfg_file then
 		self:open(filename)
+	else
+		a.nvim_set_current_buf(s.bufs.dashboard)
+		a.nvim_set_current_win(s.wins.dashboard)
 	end
 end
 
@@ -133,11 +124,15 @@ function App:open(filename)
 	end
 
 	table.insert(s.open, filename)
+	vim.cmd("e " .. filename)
 	local win = a.nvim_get_current_win()
 	local buf = a.nvim_get_current_buf()
 	s.wins[filename] = win
 	s.bufs[filename] = buf
 	s.active = filename
+
+	s.trees[filename] = md.parse(buf)
+	P(s.bufs)
 
 	-- sidebar_toggle
 	vim.keymap.set("n", "<C-t>", function()

@@ -9,4 +9,15 @@ function M.new(text, data, parent)
 	}
 end
 
+function M.node(tsnode, parent)
+	return {
+		tsnode = tsnode,
+		p = parent,
+    si = 1,
+		c = {},
+		nc = 0,
+		state = { open = true, mode = "tree" },
+	}
+end
+
 return M

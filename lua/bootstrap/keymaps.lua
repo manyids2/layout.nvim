@@ -13,6 +13,7 @@ map("n", "<leader>l", "<cmd>:Lazy<cr>", { desc = "Lazy" })
 map("n", "<leader>f", "<cmd>:Telescope find_files<cr>", { desc = "Find files" })
 map("n", "<leader>g", "<cmd>:Telescope live_grep<cr>", { desc = "Search within files" })
 map("n", "<leader>c", "<cmd>:Telescope colorscheme<cr>", { desc = "Colorscheme" })
+map("n", "<leader>;", "<cmd>:TSPlaygroundToggle<cr>", { desc = "TSPlaygroundToggle" })
 
 map("n", "<leader>ds", "<cmd>:NeoTreeShowToggle<cr>", { desc = "Directory tree in split" })
 map("n", "<leader>df", "<cmd>:NeoTreeFloatToggle<cr>", { desc = "Directory tree in float" })
