@@ -10,6 +10,13 @@ M.filter = {
 	"list_item",
 }
 
+function M.print(tree)
+	P(tree.lines)
+	for _, child in ipairs(tree.c) do
+		M.print(child)
+	end
+end
+
 function M.parse(buf)
 	local root = io.get_root(buf, "markdown")
 	local tree = M.node_to_tree(root, tt.node(nil, nil))

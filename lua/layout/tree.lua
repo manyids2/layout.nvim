@@ -10,10 +10,17 @@ function M.new(text, data, parent)
 end
 
 function M.node(tsnode, parent)
+	local lines
+	if tsnode ~= nil then
+		lines = { tsnode:type() }
+	else
+		lines = {}
+	end
 	return {
 		tsnode = tsnode,
 		p = parent,
-    si = 1,
+		lines = lines,
+		si = 1,
 		c = {},
 		nc = 0,
 		state = { open = true, mode = "tree" },

@@ -132,7 +132,7 @@ function App:open(filename)
 	s.active = filename
 
 	s.trees[filename] = md.parse(buf)
-	P(s.bufs)
+	md.print(s.trees[filename])
 
 	-- sidebar_toggle
 	vim.keymap.set("n", "<C-t>", function()
