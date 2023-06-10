@@ -3,6 +3,7 @@ local class = require("layout.middleclass")
 local a = vim.api
 local io = require("layout.io")
 local yaml = require("layout.parsers.yaml")
+local Split = require("nui.split")
 
 local App = class("App")
 
@@ -13,6 +14,7 @@ function App:initialize()
 		wins = {},
 		bufs = {},
 		active = "",
+		sidebar_open = false,
 	}
 
 	self.dashboard = [[
@@ -23,6 +25,8 @@ function App:initialize()
 end
 
 function App:set_config()
+	local s = self.state
+
 	-- load config file using XDG_CONFIG_HOME
 	local output = a.nvim_exec2("!echo $XDG_CONFIG_HOME", { output = true }).output
 	self.xdg_dir = vim.split(output, "\n", {})[3]
@@ -40,53 +44,90 @@ function App:set_config()
 		a.nvim_buf_set_option(buf, "buflisted", false)
 
 		-- update state
-		local s = self.state
 		s.bufs.config = buf
 		s.wins.config = win
 		table.insert(s.open, "config")
 
 		-- parse config - throwing away tree for now
 		s.config = yaml.config_from_tree(yaml.parse(buf))
-	else
-		return
 	end
+
+	a.nvim_set_current_win(s.wins.dashboard)
+	a.nvim_set_current_buf(s.bufs.dashboard)
 end
 
 function App:mount()
 	local s = self.state
+	local filename = a.nvim_exec2("echo expand('%')", { output = true }).output
 
-	-- Unlist empty buffer
-	local buf = a.nvim_get_current_buf()
-	local win = a.nvim_get_current_win()
+	local buf, win
+	if filename == "" then
+		buf = a.nvim_get_current_buf()
+	else
+		buf = a.nvim_create_buf(false, true)
+	end
+	a.nvim_buf_set_option(buf, "modifiable", false)
+	a.nvim_buf_set_name(buf, "dashboard")
+
+	win = a.nvim_get_current_win()
 	s.wins.dashboard = win
 	s.bufs.dashboard = buf
-	a.nvim_buf_set_option(buf, "buflisted", false)
 
 	-- Display dashboard
 	s.active = "dashboard"
 	s.open = { "dashboard" }
 	io.set_text(buf, self.dashboard)
 
+	-- Create sidebar
+	self:create_sidebar()
+
+	-- sidebar_toggle
+	vim.keymap.set("n", "<C-t>", function()
+		s.sidebar_open = not s.sidebar_open
+		if s.sidebar_open then
+			self.sidebar:show()
+		else
+			self.sidebar:hide()
+		end
+	end, { desc = "Toggle sidebar", buffer = buf })
+
 	-- Destroy on quit
 	vim.keymap.set("n", "q", function()
 		self:unmount()
 		vim.cmd([[q!]])
 	end, { desc = "Quit all", buffer = buf })
+
+	if filename ~= "" then
+		self:open(filename)
+	end
+end
+
+function App:create_sidebar()
+	self.sidebar = Split({
+		relative = "editor",
+		position = "left",
+		size = "30%",
+	})
+	self.sidebar:map("n", "<C-t>", function()
+		self.state.sidebar_open = false
+		self.sidebar:hide()
+	end, {}, true)
+
+	self.sidebar:mount()
+	self.sidebar:hide()
 end
 
 function App:unmount()
 	local s = self.state
 	for _, buf in pairs(s.bufs) do
-		a.nvim_buf_delete(buf, { force = true })
+		if a.nvim_buf_is_valid(buf) then
+			a.nvim_buf_delete(buf, { force = true })
+		end
 	end
 end
 
-function App:open()
+function App:open(filename)
 	local s = self.state
-	local filename = a.nvim_exec2("echo expand('%')", { output = true }).output
-	if filename == "" then
-		return
-	end
 	if vim.tbl_contains(s.open, filename) then
 		return
 	end
@@ -97,7 +138,16 @@ function App:open()
 	s.wins[filename] = win
 	s.bufs[filename] = buf
 	s.active = filename
-	P(s.open)
+
+	-- sidebar_toggle
+	vim.keymap.set("n", "<C-t>", function()
+		s.sidebar_open = not s.sidebar_open
+		if s.sidebar_open then
+			self.sidebar:show()
+		else
+			self.sidebar:hide()
+		end
+	end, { desc = "Toggle sidebar", buffer = buf })
 end
 
 return App
