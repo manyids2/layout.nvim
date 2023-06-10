@@ -13,6 +13,7 @@ function App:initialize()
 		wins = {},
 		bufs = {},
 		trees = {},
+		counts = {},
 		active = "",
 		sidebar_open = false,
 	}
@@ -56,6 +57,21 @@ function App:set_dashboard()
 	io.set_text(buf, self.dashboard)
 end
 
+function App:create_sidebar()
+	self.sidebar = Split({
+		relative = "editor",
+		position = "left",
+		size = "30%",
+	})
+	self.sidebar:map("n", "<C-t>", function()
+		self.state.sidebar_open = false
+		self.sidebar:hide()
+	end, {}, true)
+
+	self.sidebar:mount()
+	self.sidebar:hide()
+end
+
 function App:mount()
 	local s = self.state
 	local filename = a.nvim_exec2("echo expand('%:p')", { output = true }).output
@@ -93,21 +109,6 @@ function App:mount()
 	end
 end
 
-function App:create_sidebar()
-	self.sidebar = Split({
-		relative = "editor",
-		position = "left",
-		size = "30%",
-	})
-	self.sidebar:map("n", "<C-t>", function()
-		self.state.sidebar_open = false
-		self.sidebar:hide()
-	end, {}, true)
-
-	self.sidebar:mount()
-	self.sidebar:hide()
-end
-
 function App:unmount()
 	local s = self.state
 	for _, buf in pairs(s.bufs) do
@@ -132,7 +133,8 @@ function App:open(filename)
 	s.active = filename
 
 	s.trees[filename] = md.parse(buf)
-	md.print(s.trees[filename])
+	local size = s.trees[filename].root.size
+	md.set_lines(s.trees[filename], buf, size)
 
 	-- sidebar_toggle
 	vim.keymap.set("n", "<C-t>", function()

@@ -1,30 +1,26 @@
-local M = {}
+local class = require("layout.middleclass")
 
-function M.new(text, data, parent)
-	return {
-		text = text,
-		data = data,
-		p = parent,
-		c = {},
-	}
-end
+local Tree = class("Tree")
 
-function M.node(tsnode, parent)
-	local lines
+function Tree:initialize(tsnode, parent, root)
+	local lines, range
 	if tsnode ~= nil then
 		lines = { tsnode:type() }
+		range = tsnode:range(false)
 	else
-		lines = {}
+		lines = { " " }
 	end
-	return {
-		tsnode = tsnode,
-		p = parent,
-		lines = lines,
-		si = 1,
-		c = {},
-		nc = 0,
-		state = { open = true, mode = "tree" },
-	}
+	self.th = 1
+	self.tw = string.len(lines[1])
+	self.tsnode = tsnode
+	self.root = root
+	self.p = parent
+	self.lines = lines
+	self.range = range
+	self.si = 1
+	self.c = {}
+	self.nc = 0
+	self.state = { open = true, mode = "tree" }
 end
 
-return M
+return Tree
