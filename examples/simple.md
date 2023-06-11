@@ -9,10 +9,9 @@
     os dfsdfsdf
   - [ ] uncheck
   - [x] checked
-
-    ```python
-    import life
-    ```
+  - [ ] uncheck
+  - [x] checked
+  - [ ] uncheck
 
     something else
 
