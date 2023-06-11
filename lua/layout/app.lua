@@ -1,4 +1,4 @@
-local class = require("layout.middleclass")
+local class = require("external.middleclass")
 
 local a = vim.api
 local io = require("layout.io")

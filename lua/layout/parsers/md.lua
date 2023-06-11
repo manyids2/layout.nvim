@@ -1,5 +1,5 @@
 local a = vim.api
-local io = require("layout.io")
+local tsp = require("nvim-treesitter.parsers")
 local Tree = require("layout.tree")
 
 local md = {}
@@ -70,11 +70,16 @@ md.get_data.inline = function(tree, buf, size)
 	return { dtype = md.dtypes.inline, lines = lines }
 end
 
+function md.get_root(buf)
+	local parser = tsp.get_parser(buf, "markdown")
+	return parser:parse()[1]:root()
+end
+
 function md.parse(buf)
 	local size = vim.tbl_count(a.nvim_buf_get_lines(buf, 0, -1, false))
 
 	-- Initialize root
-	local tsroot = io.get_root(buf, "markdown")
+	local tsroot = md.get_root(buf)
 	local root = Tree:new(tsroot, nil, { size = size, dtype = "document" })
 
 	-- Set up the tree
