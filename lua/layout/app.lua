@@ -133,10 +133,8 @@ function App:open(filename)
 	s.active = filename
 
 	local tree = md.parse(buf)
-	local size = tree.root.size
-	md.set_lines(tree, buf, size)
-	-- md.print(tree)
 	s.trees[filename] = tree
+  tree:print("contents")
 
 	-- sidebar_toggle
 	vim.keymap.set("n", "<C-t>", function()
