@@ -16,6 +16,7 @@ M.spacers = {
 	"task_list_marker_unchecked",
 	"task_list_marker_checked",
 	"[x]",
+	":",
 }
 
 M.contents = {
@@ -90,6 +91,9 @@ M.get_data = {
 	["[x]"] = function(node, _, _)
 		return { node = node, dtype = M.dtypes["[x]"] }
 	end,
+	[":"] = function(node, _, _)
+		return { node = node, dtype = M.dtypes[":"] }
+	end,
 	task_list_marker_unchecked = function(node, _, _)
 		return { node = node, dtype = M.dtypes.task_list_marker_unchecked }
 	end,
@@ -150,10 +154,7 @@ end
 
 function M.print(tree)
 	if tree.tsnode then
-    print(tree.dtype, tree.tsnode:type())
-		if tree.dtype == "contents" then
-			P(tree.lines)
-		end
+		print(tree)
 		for _, child in ipairs(tree.c) do
 			M.print(child)
 		end
@@ -164,8 +165,16 @@ function M.parse(buf)
 	local size = vim.tbl_count(a.nvim_buf_get_lines(buf, 0, -1, false))
 
 	local tsroot = io.get_root(buf, "markdown")
-	local root = Tree:new(tsroot, nil, { size = size })
+	local root = Tree:new(tsroot, nil, { size = size, dtype = "document" })
 	M.setup_children(root, root)
+	M.set_lines(root, buf, size)
+	-- M.print(root)
+
+	local croot = Tree:new(tsroot, nil, { size = size, dtype = "document" })
+	local contents = root:get_dtype_tree("contents", nil, croot)
+	M.setup_children(contents, contents)
+	M.set_lines(contents, buf, size)
+	M.print(contents)
 
 	return root
 end
@@ -176,6 +185,7 @@ function M.setup_children(node, root)
 		table.insert(node.c, M.setup_children(cnode, root))
 	end
 	node.nc = vim.tbl_count(node.c)
+	node.dtype = M.dtypes[node.tsnode:type()]
 	return node
 end
 

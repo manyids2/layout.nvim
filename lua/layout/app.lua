@@ -135,7 +135,7 @@ function App:open(filename)
 	local tree = md.parse(buf)
 	local size = tree.root.size
 	md.set_lines(tree, buf, size)
-	md.print(tree)
+	-- md.print(tree)
 	s.trees[filename] = tree
 
 	-- sidebar_toggle
