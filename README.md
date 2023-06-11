@@ -11,7 +11,7 @@ Given tree, state, config, compute layout of nodes.
 hees
 
 - [ ] Reading config, storing refs
-- [ ] Sidebar
+- [x] Sidebar
 - [ ] Understanding markdown
 
 
@@ -24,7 +24,7 @@ data
 
 ### State:
 
-- Basics
+* Basics
   - hidden
   - open
   - visible
@@ -42,7 +42,7 @@ data
   - tx, ty, tw, th
 
 ```python
-
+import something
 
 ```
 
